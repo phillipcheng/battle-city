@@ -6,18 +6,23 @@ from tank import Tank
 class Player(Tank):
 
 	def __init__(self, level, type, position = None, direction = None, filename = None, globals=None):
-
-		Tank.__init__(self, level, type, position = None, direction = None, filename = None, globals=globals)
+		if globals.tricks is not None:
+			Tank.__init__(self, level, type, position = None, direction = None, filename = None, globals=globals, super_power=globals.tricks.player_bullet_super_power, speed_in=globals.tricks.player_bullet_speed)
+		else:
+			Tank.__init__(self, level, type, position=None, direction=None, filename=None, globals=globals)
 
 		self.globals = globals
 
-		if filename == None:
+		if filename is None:
 			filename = (0, 0, 16*2, 16*2)
 
 		self.start_position = position
 		self.start_direction = direction
 
-		self.lives = 3
+		if globals.tricks is not None:
+			self.lives = globals.tricks.player_lifes
+		else:
+			self.lives = 100
 
 		# total score
 		self.score = 0
@@ -106,7 +111,10 @@ class Player(Tank):
 		""" reset player """
 		self.rotate(self.start_direction, False)
 		self.rect.topleft = self.start_position
-		self.superpowers = 0
+		if self.globals.tricks is not None:
+			self.superpowers = self.globals.tricks.player_bullet_super_power
+		else:
+			self.superpowers = 0
 		self.max_active_bullets = 1
 		self.health = 100
 		self.paralised = False

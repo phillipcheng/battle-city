@@ -1,5 +1,11 @@
+from castle import Castle
+from timer import Timer
+from tricks import Tricks
+
+
 class Globals():
-    def __init__(self, timer, sprites, screen, players, enemies, bullets, bonuses, labels, castle, play_sounds, sounds):
+    def __init__(self, tricks: Tricks, timer:Timer, sprites, screen, players, enemies, bullets, bonuses, labels, castle:Castle, play_sounds:bool, sounds):
+        self.tricks = tricks
         self.timer = timer
 
         self.sprites = sprites

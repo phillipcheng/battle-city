@@ -16,9 +16,11 @@ class Level():
         """ There are total 35 different levels. If level_nr is larger than 35, loop over
 		to next according level so, for example, if level_nr ir 37, then load level 2 """
 
+        self.globals = globals
         # max number of enemies simultaneously  being on map
         self.max_active_enemies = 4
-        self.globals = globals
+        if self.globals.tricks is not None:
+            self.max_active_enemies = self.globals.tricks.max_active_enemies
 
         tile_images = [
             pygame.Surface((8 * 2, 8 * 2)),
@@ -142,7 +144,8 @@ class Level():
         self.obstacle_rects = [self.globals.castle.rect]
 
         for tile in self.mapr:
-            if tile.type in (self.TILE_BRICK, self.TILE_STEEL, self.TILE_WATER):
+            # if tile.type in (self.TILE_BRICK, self.TILE_STEEL, self.TILE_WATER):
+            if tile.type in (self.TILE_BRICK, self.TILE_STEEL):
                 self.obstacle_rects.append(tile)
 
     def buildFortress(self, tile):

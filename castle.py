@@ -1,6 +1,7 @@
 import pygame
 
 from explosion import Explosion
+from tricks import Tricks
 
 
 class Castle():
@@ -8,11 +9,16 @@ class Castle():
 
 	(STATE_STANDING, STATE_DESTROYED, STATE_EXPLODING) = range(3)
 
-	def __init__(self, timer, screen, sprites):
+	def __init__(self, timer, screen, sprites, tricks:Tricks):
 
+		self.explosion = None
+		self.image = None
+		self.state = None
+		self.active = True
 		self.timer = timer
 		self.screen = screen
 		self.sprites = sprites
+		self.tricks = tricks
 
 		# images
 		self.img_undamaged = sprites.subsurface(0, 15*2, 16*2, 16*2)
@@ -47,3 +53,5 @@ class Castle():
 		self.explosion = Explosion(self.rect.topleft, self.timer, self.screen, self.sprites)
 		self.image = self.img_destroyed
 		self.active = False
+		if self.tricks is not None:
+			self.active = self.tricks.castle_active

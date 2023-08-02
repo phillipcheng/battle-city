@@ -11,6 +11,7 @@ from label import Label
 from level import Level
 from timer import Timer
 from player import Player
+from tricks import Tricks
 
 
 class Game():
@@ -21,7 +22,6 @@ class Game():
 
     def __init__(self, globals):
         self.globals = globals
-
         # center window
         os.environ['SDL_VIDEO_WINDOW_POS'] = 'center'
 
@@ -30,6 +30,7 @@ class Game():
 
         pygame.init()
 
+        # init joystick
         self.joycount = pygame.joystick.get_count()
         self.joysticks = []
         for i in range(self.joycount):
@@ -199,56 +200,9 @@ class Game():
                 if event.type == pygame.QUIT:
                     quit()
                 elif event.type == pygame.KEYDOWN:
-                    if event.key == pygame.K_RETURN:
+                    if event.key == pygame.K_SPACE:
                         self.showMenu()
                         return
-
-    '''
-	cy: translate joystick event to key_board event
-	event.type:
-	event.key:
-	'''
-
-    def translate_event(self):
-        prev_event = None
-        for i in range(self.joycount):
-            joystick = self.joysticks[i]
-            jid = joystick.id
-            # Get the name from the OS for the controller/joystick.
-            name = joystick.name
-            numaxes = joystick.numaxes
-            numbuttons = joystick.numbuttons
-            # print("jid:{}, name:{}, numaxes:{}, numbuttons:{}", jid, name, numaxes, numbuttons)
-            # Usually axis run in pairs, up/down for one, and left/right for
-            # the other. Triggers count as axes.
-            for axis_i in range(numaxes):
-                axis = joystick.joy.get_axis(axis_i)
-                if abs(axis) >= 0.5:
-                    print(f"Axis {axis_i} value: {axis:>6.3f}")
-                if axis_i == 0:  # x
-                    if axis >= 1:  # left
-                        newevent = pygame.event.Event(pygame.KEYDOWN, key=pygame.K_LEFT)
-                        pygame.event.post(newevent)  # add the event to the queue
-                    elif axis < -1:  # right
-                        newevent = pygame.event.Event(pygame.KEYDOWN, key=pygame.K_RIGHT)
-                        pygame.event.post(newevent)  # add the event to the queue
-                # elif axis<0.05 and axis>-0.05:
-                # 	newevent = pygame.event.Event(pygame.KEYUP)
-                # 	pygame.event.post(newevent)  # add the event to the queue
-                elif axis_i == 1:  # y
-                    if axis >= 0.9:  # down
-                        newevent = pygame.event.Event(pygame.KEYDOWN, key=pygame.K_DOWN)
-                        pygame.event.post(newevent)  # add the event to the queue
-                    elif axis <= -0.9:  # up
-                        newevent = pygame.event.Event(pygame.KEYDOWN, key=pygame.K_UP)
-                        pygame.event.post(newevent)  # add the event to the queue
-                # elif axis<0.05 and axis>-0.05:
-                # 	newevent = pygame.event.Event(pygame.KEYUP)
-                # 	pygame.event.post(newevent)  # add the event to the queue
-
-        # for i in range(numbuttons):
-        # 	button = joystick.joy.get_button(i)
-        # 	print(f"Button {i:>2} value: {button}")
 
     def showMenu(self):
         """ Show game menu
@@ -272,7 +226,10 @@ class Game():
             time_passed = self.clock.tick(50)
 
             for event in pygame.event.get():
-                self.translate_event()
+
+                for i in range(self.joycount):
+                    joystick = self.joysticks[i]
+                    joystick.translate_event()
 
                 if event.type == pygame.QUIT:
                     quit()
@@ -287,7 +244,7 @@ class Game():
                         if self.nr_of_players == 1:
                             self.nr_of_players = 2
                             self.drawIntroScreen()
-                    elif event.key == pygame.K_RETURN:
+                    elif event.key == pygame.K_SPACE:
                         main_loop = False
 
         del self.globals.players[:]
@@ -315,7 +272,8 @@ class Game():
                 player = Player(
                     self.level, 0, [x, y], self.DIR_UP, (16 * 2, 0, 13 * 2, 13 * 2), globals=self.globals
                 )
-                player.controls = [102, 119, 100, 115, 97]
+                player.controls = [pygame.K_f, pygame.K_w, pygame.K_d, pygame.K_s, pygame.K_a,
+                                   pygame.K_z, pygame.K_x, pygame.K_c, pygame.K_v]
                 self.globals.players.append(player)
 
         for player in self.globals.players:
@@ -582,7 +540,7 @@ class Game():
             time_passed = self.clock.tick(50)
             for event in pygame.event.get():
                 if event.type == pygame.KEYDOWN:
-                    if event.key == pygame.K_RETURN:
+                    if event.key == pygame.K_SPACE:
                         y = 0
                         break
 
@@ -770,6 +728,10 @@ class Game():
 
             time_passed = self.clock.tick(50)
 
+            for i in range(self.joycount):
+                joystick = self.joysticks[i]
+                joystick.translate_event()
+
             for event in pygame.event.get():
                 if event.type == pygame.MOUSEBUTTONDOWN:
                     pass
@@ -805,6 +767,30 @@ class Game():
                                     player.pressed[2] = True
                                 elif index == 4:
                                     player.pressed[3] = True
+                                elif index == 5:
+                                    if self.globals.tricks is not None and self.globals.tricks.helmet_me:
+                                        self.shieldPlayer(player, shield=True, duration=10000)
+                                elif index == 6:
+                                    if self.globals.tricks is not None and self.globals.tricks.freeze_enemy:
+                                        self.toggleEnemyFreeze(True)
+                                        self.globals.timer.add(10000, lambda: self.toggleEnemyFreeze(False), 1)
+                                elif index == 7:
+                                    if self.globals.tricks is not None and self.globals.tricks.fire_all:
+                                        if player.fire(allow_full_fire=True, all_direction=True) and self.globals.play_sounds:
+                                            self.globals.sounds["fire"].play()
+                                elif index == 8:
+                                    if self.globals.tricks is None:
+                                        self.globals.tricks = Tricks()
+                                        self.globals.castle.tricks = self.globals.tricks
+                                        for player in self.globals.players:
+                                            player.globals.tricks = self.globals.tricks
+                                            player.superpowers = self.globals.tricks.player_bullet_super_power
+                                            player.speed = self.globals.tricks.player_bullet_speed
+                                    else:
+                                        self.globals.tricks = None
+                                        self.globals.castle.tricks = None
+                                        for player in self.globals.players:
+                                            player.globals.tricks = None
                 elif event.type == pygame.KEYUP and not self.game_over and self.active:
                     for player in self.globals.players:
                         if player.state == player.STATE_ALIVE:
